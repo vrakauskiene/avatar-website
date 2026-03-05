@@ -1,0 +1,1275 @@
+<!doctype html>
+<html lang="lt">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Kaip sukurti kalbantį AI avatarą | Matrix PRO</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg:#020406;
+      --text: rgba(226,255,236,.92);
+      --muted: rgba(226,255,236,.66);
+      --green: #00ff88;
+      --shadow: 0 28px 85px rgba(0,0,0,.58);
+      --line: rgba(0,255,136,.18);
+      --r: 22px;
+      --r2: 28px;
+      --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      color: var(--text);
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:
+        radial-gradient(900px 700px at 18% 12%, rgba(0,255,136,.12), transparent 65%),
+        radial-gradient(900px 700px at 82% 25%, rgba(0,255,136,.08), transparent 60%),
+        radial-gradient(1100px 900px at 55% 90%, rgba(0,255,136,.06), transparent 60%),
+        var(--bg);
+      overflow-x:hidden;
+    }
+
+    /* Matrix rain background */
+    #matrix{
+      position:fixed; inset:0; z-index:-3;
+      width:100vw; height:100vh;
+      background:#000;
+    }
+
+    /* scanlines */
+    .scanlines{
+      position:fixed; inset:0; z-index:-2;
+      pointer-events:none;
+      background: linear-gradient(
+        to bottom,
+        rgba(0,0,0,0) 0%,
+        rgba(0,0,0,0) 48%,
+        rgba(0,0,0,.18) 50%,
+        rgba(0,0,0,0) 52%,
+        rgba(0,0,0,0) 100%
+      );
+      background-size: 100% 6px;
+      mix-blend-mode: overlay;
+      opacity: .33;
+      animation: scan 10s linear infinite;
+    }
+    @keyframes scan{from{transform:translateY(0)}to{transform:translateY(6px)}}
+
+    /* vignette */
+    .vignette{
+      position:fixed; inset:0; z-index:-1; pointer-events:none;
+      background: radial-gradient(ellipse at center, rgba(0,0,0,0) 35%, rgba(0,0,0,.78) 100%);
+    }
+
+    header{
+      position:sticky; top:0; z-index:50;
+      display:flex; align-items:center; justify-content:space-between;
+      gap: 16px;
+      padding: 14px 4vw;
+      background: rgba(0,0,0,.62);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand{display:flex; align-items:center; gap:12px; min-width: 260px}
+    .logo{
+      width:42px;height:42px;border-radius:14px;
+      display:grid;place-items:center;
+      font-family: var(--mono);
+      font-weight: 900;
+      color:#001a0c;
+      background: linear-gradient(135deg, var(--green), rgba(0,255,136,.60));
+      box-shadow: 0 0 0 1px rgba(0,255,136,.26), 0 18px 55px rgba(0,255,136,.12);
+    }
+    .brand h1{margin:0;font-size:13px;font-weight:900;letter-spacing:.2px}
+    .brand p{margin:2px 0 0;color:var(--muted);font-size:12px;font-weight:650}
+
+    nav{display:flex; gap: 10px; flex-wrap:wrap; justify-content:center}
+    nav a{
+      text-decoration:none;
+      color: var(--muted);
+      font-weight: 900;
+      font-size: 12px;
+      letter-spacing:.14px;
+      padding: 9px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(0,255,136,.14);
+      background: rgba(0,255,136,.04);
+      transition: transform .15s ease, border .2s ease, background .2s ease;
+      font-family: var(--mono);
+    }
+    nav a:hover{
+      transform: translateY(-1px);
+      border-color: rgba(0,255,136,.28);
+      background: rgba(0,255,136,.07);
+    }
+
+    .cta{
+      text-decoration:none;
+      color: rgba(0,0,0,.92);
+      font-weight: 950;
+      font-family: var(--mono);
+      padding: 11px 14px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--green), rgba(0,255,136,.60));
+      box-shadow: 0 0 0 1px rgba(0,255,136,.28), 0 22px 65px rgba(0,255,136,.10);
+      transition: transform .15s ease, filter .2s ease;
+      white-space:nowrap;
+    }
+    .cta:hover{transform: translateY(-1px); filter: brightness(1.06)}
+
+    .wrap{width:min(1180px, 92vw); margin:0 auto; padding: 86px 0 52px;}
+
+    .card{
+      border-radius: var(--r2);
+      background: linear-gradient(180deg, rgba(0,255,136,.06), rgba(0,0,0,.20));
+      border: 1px solid rgba(0,255,136,.16);
+      box-shadow: var(--shadow);
+    }
+    .btn{
+      cursor:pointer;
+      border:none;
+      padding: 12px 14px;
+      border-radius: 16px;
+      font-weight: 950;
+      letter-spacing: .12px;
+      font-family: var(--mono);
+      color: var(--text);
+      background: rgba(0,255,136,.06);
+      border: 1px solid rgba(0,255,136,.18);
+      transition: transform .15s ease, background .2s ease, border .2s ease, filter .2s ease;
+    }
+    .btn:hover{transform: translateY(-1px); background: rgba(0,255,136,.09); border-color: rgba(0,255,136,.32)}
+    .btn:active{transform: translateY(0) scale(.99)}
+    .btn.primary{
+      color: rgba(0,0,0,.92);
+      background: linear-gradient(135deg, var(--green), rgba(0,255,136,.62));
+      border-color: rgba(0,255,136,.28);
+      box-shadow: 0 0 0 1px rgba(0,255,136,.22), 0 22px 60px rgba(0,255,136,.10);
+    }
+    .btn.ghost{background: rgba(0,0,0,.35)}
+    .btn.small{padding: 10px 12px; border-radius: 14px; font-size: 12px}
+
+    .pill{
+      display:inline-flex; align-items:center; gap:10px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(0,255,136,.18);
+      background: rgba(0,255,136,.04);
+      color: var(--muted);
+      font-weight: 900;
+      font-size: 12px;
+      font-family: var(--mono);
+    }
+    .dot{width:10px;height:10px;border-radius:50%; background: var(--green); box-shadow: 0 0 18px rgba(0,255,136,.35)}
+
+    section{margin-top: 46px;}
+    .head h2{margin:0; font-size: 26px; font-weight: 950; letter-spacing: -.2px}
+    .head p{margin: 8px 0 0; color: var(--muted); line-height: 1.7}
+
+    .hero{
+      display:grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 22px;
+      align-items:center;
+      margin-top: 18px;
+    }
+    .title{
+      margin: 12px 0 10px;
+      font-size: clamp(34px, 4vw, 58px);
+      line-height: 1.02;
+      letter-spacing: -.6px;
+      font-weight: 950;
+    }
+    .glow{
+      font-family: var(--mono);
+      background: linear-gradient(90deg, rgba(0,255,136,1), rgba(0,216,111,1));
+      -webkit-background-clip:text; background-clip:text; color:transparent;
+      text-shadow: 0 0 24px rgba(0,255,136,.22);
+    }
+    .lead{color: var(--muted); line-height: 1.7; font-size: 16px; margin: 0 0 16px;}
+    .actions{display:flex; gap: 10px; flex-wrap:wrap; margin: 10px 0 16px;}
+
+    .stats{display:flex; gap: 12px; margin-top: 10px;}
+    .stat{
+      flex:1; padding: 14px 14px;
+      border-radius: var(--r);
+      background: rgba(0,255,136,.04);
+      border: 1px solid rgba(0,255,136,.16);
+    }
+    .stat .num{font-family: var(--mono); font-weight: 950; font-size: 20px;}
+    .stat .lbl{margin-top: 4px; color: var(--muted); font-size: 12px; font-weight: 900; letter-spacing: .12px; font-family: var(--mono)}
+
+    .preview{padding: 14px;}
+    .cardTop{display:flex; align-items:center; justify-content:space-between; gap: 10px; margin-bottom: 12px;}
+    .tags{display:flex; gap: 8px; flex-wrap:wrap}
+    .tag{
+      font-size: 12px;
+      font-weight: 950;
+      font-family: var(--mono);
+      color: rgba(0,255,136,.82);
+      border: 1px solid rgba(0,255,136,.16);
+      background: rgba(0,255,136,.05);
+      padding: 6px 10px;
+      border-radius: 999px;
+    }
+    .live{
+      color: var(--muted);
+      font-weight: 900;
+      font-family: var(--mono);
+      font-size: 12px;
+      display:flex; align-items:center; gap: 8px;
+    }
+    .ping{
+      width:10px;height:10px;border-radius:50%;
+      background: var(--green);
+      box-shadow:0 0 18px rgba(0,255,136,.35);
+      animation: ping 1.1s infinite;
+    }
+    @keyframes ping{0%{transform:scale(1)}60%{transform:scale(1.6);opacity:.55}100%{transform:scale(1);opacity:1}}
+
+    .media{
+      position:relative;
+      border-radius: 22px;
+      overflow:hidden;
+      border: 1px solid rgba(0,255,136,.18);
+      background: #000;
+    }
+    .media video,.media img{
+      width:100%;
+      height:auto;
+      object-fit: contain;
+      object-position: center;
+      display:block;
+      background:#000;
+    }
+    .overlay{
+      position:absolute; inset:0;
+      display:flex; justify-content:space-between; align-items:flex-end;
+      padding: 12px;
+      background: linear-gradient(180deg, transparent 55%, rgba(0,0,0,.68));
+    }
+
+    .caption{padding: 12px 4px 2px}
+    .capTitle{font-weight: 950; font-family: var(--mono)}
+    .capSub{color: var(--muted); font-weight: 750; font-size: 13px; margin-top: 2px}
+
+    .grid2{display:grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px;}
+    .pad{padding: 16px}
+    .mono{font-family: var(--mono); font-weight: 950}
+    .list{margin: 10px 0 0; padding-left: 18px; color: var(--muted); line-height: 1.75; font-weight: 650}
+    .list b{color: rgba(226,255,236,.86)}
+
+    .tool{padding: 14px; border-radius: var(--r2); background: rgba(0,0,0,.36); border: 1px solid rgba(0,255,136,.14)}
+    .tool h3{margin: 0; font-family: var(--mono); font-weight: 950; font-size: 16px}
+    .tool p{margin: 8px 0 10px; color: var(--muted); line-height: 1.7}
+    .tool a{color: rgba(0,255,136,.85); font-family: var(--mono); font-weight: 950; text-decoration:none}
+    .tool a:hover{text-decoration:underline}
+
+    .timeline{position:relative; margin-top: 16px;}
+    .line{
+      position:absolute; left: 22px; top: 0; bottom: 0;
+      width: 2px;
+      background: linear-gradient(180deg, rgba(0,255,136,.55), rgba(0,255,136,.10));
+      opacity: .9;
+    }
+    .step{display:grid; grid-template-columns: 56px 1fr; gap: 14px; margin: 14px 0;}
+    .badge{
+      width: 44px; height: 44px; border-radius: 16px;
+      display:grid; place-items:center;
+      font-family: var(--mono);
+      font-weight: 950;
+      color: rgba(0,0,0,.9);
+      background: linear-gradient(135deg, var(--green), rgba(0,255,136,.55));
+      box-shadow: 0 0 0 1px rgba(0,255,136,.24), 0 20px 55px rgba(0,255,136,.10);
+    }
+    .stepCard{
+      padding: 14px;
+      border-radius: var(--r2);
+      background: rgba(0,0,0,.36);
+      border: 1px solid rgba(0,255,136,.16);
+    }
+    .stepSplit{
+      display:grid;
+      grid-template-columns: minmax(0,1.4fr) minmax(0,1fr);
+      align-items:center;
+      gap: 16px;
+    }
+    .stepContent{min-width:0}
+    .stepMedia{
+      justify-self:flex-end;
+      max-width: 340px;
+      width: 100%;
+    }
+    .stepTitle{font-weight: 950; font-size: 18px; font-family: var(--mono)}
+    .stepSub{color: var(--muted); font-weight: 750; font-size: 13px; margin-top: 4px}
+    .stepImg{
+      width: 100%;
+      max-height: 260px;
+      object-fit: contain;
+      object-position: center;
+      border-radius: 18px;
+      margin-top: 12px;
+      border: 1px solid rgba(0,255,136,.16);
+      background:#000;
+    }
+    .row{display:flex; gap: 10px; margin-top: 12px; flex-wrap:wrap}
+
+    .audioBox{margin-top: 12px}
+    .audioLine{display:flex; align-items:center; gap: 12px}
+    .bar{position:relative; flex:1; height: 10px; border-radius: 999px; overflow:hidden; border: 1px solid rgba(0,255,136,.16); background: rgba(0,255,136,.05)}
+    .fill{height:100%; width:0%; background: linear-gradient(90deg, rgba(0,255,136,1), rgba(0,216,111,1))}
+    .time{min-width: 54px; text-align:right; font-family: var(--mono); color: var(--muted); font-weight: 900; font-size: 12px}
+    .script{
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 18px;
+      border: 1px solid rgba(0,255,136,.14);
+      background: rgba(0,0,0,.35);
+      color: rgba(226,255,236,.78);
+      font-weight: 650;
+      line-height: 1.7;
+    }
+
+    .logBody{
+      padding: 12px 16px 16px;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      color: rgba(226,255,236,.78);
+      white-space: pre-wrap;
+      line-height: 1.6;
+    }
+
+    .qa{padding: 16px}
+    .qaTop{display:flex; gap: 10px; flex-wrap:wrap}
+    .input{
+      flex:1; min-width: 240px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(0,255,136,.18);
+      background: rgba(0,0,0,.38);
+      color: var(--text);
+      font-family: var(--mono);
+      font-weight: 900;
+      outline:none;
+    }
+    .input::placeholder{color: rgba(226,255,236,.55)}
+    .hints{display:flex; gap: 10px; flex-wrap:wrap; margin-top: 12px}
+    .hint{
+      cursor:pointer;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(0,255,136,.14);
+      background: rgba(0,255,136,.05);
+      color: rgba(226,255,236,.78);
+      font-family: var(--mono);
+      font-weight: 950;
+      font-size: 12px;
+    }
+    .ans{margin-top: 12px; padding: 14px; border-radius: 20px; border: 1px solid rgba(0,255,136,.14); background: rgba(0,0,0,.36)}
+    .meta{color: var(--muted); font-family: var(--mono); font-weight: 900; font-size: 12px}
+    .text{margin-top: 8px; color: rgba(226,255,236,.86); font-weight: 650; line-height: 1.7}
+    .note{margin-top: 10px; color: rgba(226,255,236,.55); font-weight: 700; font-size: 12px; line-height: 1.6}
+
+    footer{
+      margin-top: 42px;
+      padding: 18px 0;
+      display:flex; justify-content:space-between; gap: 10px; flex-wrap:wrap;
+      color: rgba(226,255,236,.55);
+      border-top: 1px solid rgba(0,255,136,.14);
+      font-family: var(--mono);
+      font-weight: 900;
+      font-size: 12px;
+    }
+    footer a{color: rgba(226,255,236,.72); text-decoration:none}
+    footer a:hover{text-decoration:underline}
+
+    dialog::backdrop{background: rgba(0,0,0,.72)}
+    dialog{border:none; width:min(980px, 94vw); background: transparent;}
+    .modalBox{
+      border-radius: 26px;
+      background: rgba(0,0,0,.80);
+      border: 1px solid rgba(0,255,136,.18);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .modalTop{display:flex; align-items:center; justify-content:space-between; gap: 10px; padding: 14px; border-bottom: 1px solid rgba(0,255,136,.12)}
+    .modalTitle{font-family: var(--mono); font-weight: 950}
+    .modalContent{padding: 14px}
+    .modalContent img,.modalContent video{width:100%; border-radius: 18px; border: 1px solid rgba(0,255,136,.18); background:#000}
+
+    @media (max-width: 980px){
+      nav{display:none}
+      .hero{grid-template-columns: 1fr}
+      .grid2{grid-template-columns: 1fr}
+      .stepSplit{grid-template-columns: 1fr}
+      .stepMedia{max-width: 100%}
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      *{animation:none !important; transition:none !important; scroll-behavior:auto !important}
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="matrix" aria-hidden="true"></canvas>
+  <div class="scanlines" aria-hidden="true"></div>
+  <div class="vignette" aria-hidden="true"></div>
+
+  <header>
+    <div class="brand">
+      <div class="logo">AI</div>
+      <div>
+        <h1>Matrix PRO • Kalbantis AI avataras</h1>
+        <p>Pradedantiesiems: aiškiai, paprastai, žingsnis po žingsnio</p>
+      </div>
+    </div>
+
+    <nav>
+      <a href="#home">Home</a>
+      <a href="#kas">Kas tai?</a>
+      <a href="#irankiai">Įrankiai</a>
+      <a href="#instrukcija">Instrukcija</a>
+      <a href="#patarimai">Patarimai</a>
+      <a href="#idejos">Idėjos</a>
+      <a href="#klaidos">Klaidos</a>
+      <a href="#qa">AI Q&A</a>
+    </nav>
+
+    <a class="cta" href="#instrukcija">Pradėti →</a>
+  </header>
+
+  <main class="wrap">
+
+    <!-- HOME / HERO -->
+    <section id="home" class="hero">
+      <div>
+        <div class="pill"><span class="dot"></span> Viena sistema: nuotrauka → balsas → video</div>
+
+        <div class="title">
+          Kaip sukurti <span class="glow">kalbantį AI avatarą</span><br>
+          per 10–15 minučių
+        </div>
+
+        <p class="lead">
+          AI kalbantis avataras – tai virtualus personažas, kuris <b>kalba tavo tekstą</b> ir gali atrodyti kaip žmogus ar stilizuotas veikėjas.
+          Jį naudoja socialiniuose tinkluose, marketinge, mokymuose ir prezentacijose.
+          Ši svetainė skirta žmonėms be techninių žinių – tiesiog kartok žingsnius.
+        </p>
+
+        <div class="actions">
+          <button class="btn primary" id="goSteps">Eiti į instrukciją</button>
+          <button class="btn ghost" id="toggleMotion">Sumažinti animacijas</button>
+          <button class="btn" id="toggleMatrix">Išjungti Matrix foną</button>
+        </div>
+
+        <div class="stats">
+          <div class="stat"><div class="num" data-count="8">0</div><div class="lbl">žingsniai</div></div>
+          <div class="stat"><div class="num" data-count="3">0</div><div class="lbl">įrankiai</div></div>
+          <div class="stat"><div class="num" data-count="15">0</div><div class="lbl">min</div></div>
+        </div>
+      </div>
+
+      <div class="card preview">
+        <div class="cardTop">
+          <div class="tags">
+            <span class="tag">MATRIX</span>
+            <span class="tag">PHOTO</span>
+            <span class="tag">AUDIO</span>
+            <span class="tag">VIDEO</span>
+            <span class="tag">AI Q&A</span>
+          </div>
+          <div class="live"><span class="ping"></span> LIVE</div>
+        </div>
+
+        <div class="media">
+          <!-- TAVO VIDEO FAILAS: Avatar_Video.mp4 -->
+          <video id="heroVideo" src="Avatar_Video.mp4" playsinline muted loop></video>
+          <div class="overlay">
+            <button class="btn primary small" id="playHero">▶ PLAY</button>
+            <button class="btn small" id="muteHero">🔇</button>
+          </div>
+        </div>
+
+        <div class="caption">
+          <div class="capTitle">HeyGen video</div>
+          <div class="capSub">Finalas: kalbantis avataras su subtitrais</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- KAS YRA -->
+    <section id="kas">
+      <div class="head">
+        <h2>Kas yra AI avataras?</h2>
+        <p>Trumpai ir paprastai – kad suprastų kiekvienas.</p>
+      </div>
+
+      <div class="grid2">
+        <div class="card pad">
+          <div class="mono">Kas tai?</div>
+          <ul class="list">
+            <li><b>AI avataras</b> – virtualus personažas (žmogus arba animuotas veikėjas).</li>
+            <li>Jis gali <b>kalbėti tavo tekstą</b> ir judėti video formatu.</li>
+            <li>Tu paruoši nuotrauką + tekstą, o įrankiai sukuria audio ir video.</li>
+          </ul>
+        </div>
+
+        <div class="card pad">
+          <div class="mono">Kur jis naudojamas?</div>
+          <ul class="list">
+            <li>Socialiniai tinklai: TikTok, YouTube, Reels</li>
+            <li>Marketingas: reklamos, produktų pristatymai</li>
+            <li>Mokymai: pamokos, instrukcijos</li>
+            <li>Prezentacijos: greitas pristatymas be filmavimo</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- IRANKIAI -->
+    <section id="irankiai">
+      <div class="head">
+        <h2>Reikalingi įrankiai</h2>
+        <p>Tik 3 įrankiai – ir gali pasidaryti kalbantį avatarą net be techninių žinių.</p>
+      </div>
+
+      <div class="grid2">
+        <div class="tool">
+          <h3>1) ChatGPT</h3>
+          <p>Naudosi <b>avataro sukūrimui iš nuotraukos</b>. Gali pasigaminti Pixar ar kitą stilių.</p>
+          <div class="row">
+            <button class="btn small" data-copy="avatarPrompt">COPY PROMPT</button>
+          </div>
+        </div>
+
+        <div class="tool">
+          <h3>2) ElevenLabs</h3>
+          <p>Tekstą paversi į balsą (audio). Rekomendacija pradedantiesiems: <b>iki 15 s</b>.</p>
+          <a href="https://elevenlabs.io/app/speech-synthesis/text-to-speech" target="_blank" rel="noreferrer">Atidaryti →</a>
+        </div>
+
+        <div class="tool">
+          <h3>3) HeyGen</h3>
+          <p>Įkelsi avataro nuotrauką + audio ir sugeneruosi <b>kalbantį video</b> su subtitrais.</p>
+          <a href="https://app.heygen.com/" target="_blank" rel="noreferrer">Atidaryti →</a>
+        </div>
+
+        <div class="tool">
+          <h3>Bonus: AI Q&A (OpenAI + n8n)</h3>
+          <p>Žemiau yra klausimų laukelis. Jis gali atsakyti tik apie AI avatarų kūrimą.</p>
+          <div class="row">
+            <button class="btn small" id="testTopic">Patikrinti filtrą</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- INSTRUKCIJA -->
+    <section id="instrukcija">
+      <div class="head">
+        <h2>Žingsnis po žingsnio instrukcija</h2>
+        <p>Šitie žingsniai yra sukurti taip, kad pradedantysis galėtų tiesiog kartoti.</p>
+      </div>
+
+      <div class="timeline">
+        <div class="line" aria-hidden="true"></div>
+
+        <article class="step">
+          <div class="badge">1</div>
+          <div class="stepCard stepSplit">
+            <div class="stepContent">
+              <div class="stepTitle">Avataro kūrimas (ChatGPT)</div>
+              <div class="stepSub">Įkelk savo nuotrauką ir paprašyk Pixar (ar kito) stiliaus avataro</div>
+              <ul class="list" style="margin-top:10px">
+                <li>Atidaryk ChatGPT ir <b>įkelk savo nuotrauką</b>.</li>
+                <li>Parašyk promptą (gali kopijuoti žemiau).</li>
+                <li>Išsisaugok rezultatą kaip <b>avatar.png</b>.</li>
+              </ul>
+              <div class="row">
+                <button class="btn primary small" data-open="photo">ATIDARYTI</button>
+                <button class="btn small" data-copy="avatarPrompt">COPY PROMPT</button>
+              </div>
+            </div>
+            <div class="stepMedia">
+              <img class="stepImg" src="avatar.png" alt="Avataro nuotrauka" />
+            </div>
+          </div>
+        </article>
+
+        <article class="step">
+          <div class="badge">2</div>
+          <div class="stepCard">
+            <div class="stepTitle">Balso sukūrimas (ElevenLabs)</div>
+            <div class="stepSub">Tekstą paversk į audio įrašą (iki 15 s)</div>
+            <ul class="list" style="margin-top:10px">
+              <li>Atidaryk ElevenLabs.</li>
+              <li>Įklijuok trumpą tekstą (iki 15 s).</li>
+              <li>Eksportuok kaip <b>audio.mp3</b>.</li>
+            </ul>
+
+            <div class="audioBox">
+              <audio id="audio" src="audio.mp3" preload="metadata"></audio>
+              <div class="audioLine">
+                <button class="btn primary small" id="audioToggle">▶</button>
+                <div class="bar"><div class="fill" id="fill"></div></div>
+                <div class="time" id="time">0:00</div>
+              </div>
+              <div class="script" id="script"></div>
+            </div>
+
+            <div class="row">
+              <button class="btn small" data-open="audio">ATIDARYTI</button>
+              <button class="btn small" data-copy="script">COPY TEKSTĄ</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="step">
+          <div class="badge">3</div>
+          <div class="stepCard">
+            <div class="stepTitle">Prisijungimas prie HeyGen</div>
+            <div class="stepSub">Prisijunk ir eik į avatars skiltį</div>
+            <ul class="list" style="margin-top:10px">
+              <li>Atsidaryk <b>HeyGen</b>.</li>
+              <li>Prisijunk arba susikurk paskyrą.</li>
+              <li>Eik į <b>avatars</b> skiltį.</li>
+            </ul>
+            <div class="row">
+              <a class="btn primary small" href="https://app.heygen.com/" target="_blank" rel="noreferrer">ATIDARYTI HEYGEN →</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="step">
+          <div class="badge">4</div>
+          <div class="stepCard">
+            <div class="stepTitle">Avataro importavimas</div>
+            <div class="stepSub">avatars → New look → Upload Look</div>
+            <ul class="list" style="margin-top:10px">
+              <li>HeyGen: <b>avatars</b> → <b>New look</b> → <b>Upload Look</b></li>
+              <li>Įkelk sugeneruotą <b>avatar.png</b>.</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="step">
+          <div class="badge">5</div>
+          <div class="stepCard">
+            <div class="stepTitle">Avataro naudojimas</div>
+            <div class="stepSub">Palauk apdorojimo ir pasirink „Use in video“</div>
+            <ul class="list" style="margin-top:10px">
+              <li>Palauk, kol HeyGen apdoros avatarą.</li>
+              <li>Paspausk ant avataro → <b>Use in video</b>.</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="step">
+          <div class="badge">6</div>
+          <div class="stepCard">
+            <div class="stepTitle">Audio importavimas</div>
+            <div class="stepSub">Įkelk audio failą iš ElevenLabs</div>
+            <ul class="list" style="margin-top:10px">
+              <li>HeyGen video kūrime pasirink <b>Upload audio</b>.</li>
+              <li>Įkelk <b>audio.mp3</b>.</li>
+              <li>Patikrink, ar lūpos sinchronizuojasi.</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="step">
+          <div class="badge">7</div>
+          <div class="stepCard">
+            <div class="stepTitle">Video patobulinimas</div>
+            <div class="stepSub">Subtitrai, muzika, fonas, vizualai</div>
+            <ul class="list" style="margin-top:10px">
+              <li>Įjunk <b>captions</b> (subtitrus).</li>
+              <li>Pridėk foną (paprastą, neperkrautą).</li>
+              <li>Jei reikia – tyliai pridėk muziką.</li>
+              <li>Venk per daug efektų (kad atrodytų profesionaliai).</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="step">
+          <div class="badge">8</div>
+          <div class="stepCard stepSplit">
+            <div class="stepContent">
+              <div class="stepTitle">Sugeneruok kalbantį avatarą (video)</div>
+              <div class="stepSub">Atsisiųsk ir išsisaugok kaip Avatar_Video.mp4</div>
+              <ul class="list" style="margin-top:10px">
+                <li>Paspausk <b>Generate</b>.</li>
+                <li>Atsisiųsk rezultatą (pas tave jis vadinasi <b>Avatar_Video.mp4</b>).</li>
+              </ul>
+              <div class="row">
+                <button class="btn small" data-open="video">ATIDARYTI</button>
+                <button class="btn primary small" id="sync">▶ GROTI audio+video</button>
+              </div>
+            </div>
+            <div class="stepMedia">
+              <div class="media" style="margin-top:12px">
+                <video id="video" src="Avatar_Video.mp4" controls playsinline></video>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <div style="padding:16px 16px 0; font-family:var(--mono); font-weight:950;">BUILD LOG</div>
+          <div class="logBody" id="logBody"></div>
+        </div>
+
+        <div class="card pad">
+          <div class="mono">Greita santrauka</div>
+          <ul class="list">
+            <li><b>ChatGPT</b> → avataro paveikslas iš nuotraukos</li>
+            <li><b>ElevenLabs</b> → balsas iš teksto</li>
+            <li><b>HeyGen</b> → avataras + balsas = kalbantis video</li>
+            <li><b>Svetainė</b> → parodo procesą ir leidžia paklausti (AI Q&A)</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- PATARIMAI -->
+    <section id="patarimai">
+      <div class="head">
+        <h2>Patarimai pradedantiesiems</h2>
+        <p>Keli dalykai, kurie padarys rezultatą daug geresnį net iš pirmo karto.</p>
+      </div>
+
+      <div class="grid2">
+        <div class="card pad">
+          <div class="mono">Kokią nuotrauką naudoti avatarui?</div>
+          <ul class="list">
+            <li>Gera šviesa, aiškus veidas, <b>be filtrų</b>.</li>
+            <li>Žiūrėk į kamerą, neutralus fonas.</li>
+            <li>Venk tamsių ar suliejusių nuotraukų.</li>
+          </ul>
+        </div>
+
+        <div class="card pad">
+          <div class="mono">Kokio ilgio tekstą rašyti?</div>
+          <ul class="list">
+            <li>Pradžiai rašyk <b>10–15 sekundžių</b> tekstą.</li>
+            <li>Trumpi sakiniai skamba natūraliau.</li>
+            <li>Vienai temai – viena mintis.</li>
+          </ul>
+        </div>
+
+        <div class="card pad">
+          <div class="mono">Kaip padaryti natūralesnį balsą?</div>
+          <ul class="list">
+            <li>Rašyk tekstą taip, kaip kalbėtum žmogui.</li>
+            <li>Įterpk 1–2 pauzes („…“).</li>
+            <li>Pabandyk 2–3 balsus ir palygink.</li>
+          </ul>
+        </div>
+
+        <div class="card pad">
+          <div class="mono">Dažniausios pradedančiųjų klaidos</div>
+          <ul class="list">
+            <li>Per ilgas tekstas</li>
+            <li>Prasta nuotraukos kokybė</li>
+            <li>Netinkamas balsas</li>
+            <li>Per daug efektų</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- IDEJOS -->
+    <section id="idejos">
+      <div class="head">
+        <h2>Idėjos, kur naudoti kalbančius avatarus</h2>
+        <p>Greiti pavyzdžiai, kur tai realiai praverčia.</p>
+      </div>
+
+      <div class="grid2">
+        <div class="card pad">
+          <div class="mono">Socialiniai tinklai</div>
+          <ul class="list">
+            <li>TikTok / Reels: trumpi patarimai, „how-to“</li>
+            <li>YouTube: edukaciniai video, paaiškinimai</li>
+            <li>AI influenceriai: personažų turinys</li>
+          </ul>
+        </div>
+
+        <div class="card pad">
+          <div class="mono">Verslas ir mokymai</div>
+          <ul class="list">
+            <li>Marketingo video (produktų pristatymai)</li>
+            <li>Mokymai (instrukcijos, onboarding)</li>
+            <li>Prezentacijos (kai nenori filmuoti savęs)</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- KLAIDOS -->
+    <section id="klaidos">
+      <div class="head">
+        <h2>Dažniausios klaidos</h2>
+        <p>Jei jų išvengsi – rezultatas atrodys daug profesionaliau.</p>
+      </div>
+
+      <div class="card pad">
+        <ul class="list" style="margin:0">
+          <li><b>Per ilgas tekstas</b> – laikykis iki 15 s.</li>
+          <li><b>Prasta nuotrauka</b> – sulietas veidas sugadina avatarą.</li>
+          <li><b>Netinkamas balsas</b> – rinkis balsą pagal stilių.</li>
+          <li><b>Per daug efektų</b> – geriau švaru + subtitrai.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ISVADA -->
+    <section id="isvada">
+      <div class="head">
+        <h2>Išvada</h2>
+        <p>
+          Kalbantį AI avatarą galima susikurti per <b>10–15 minučių</b>, net neturint techninių žinių.
+          Tiesiog eik žingsniais: nuotrauka → balsas → video. Pirmas kartas gali būti „ok“, o antras – jau labai geras.
+        </p>
+      </div>
+    </section>
+
+    <!-- AI Q&A -->
+    <section id="qa">
+      <div class="head">
+        <h2>Paklausk apie AI avataro kūrimą (AI Q&A)</h2>
+        <p>
+          Papildoma užduotis: AI atsako tik į klausimus apie šią temą.
+          Kad veiktų realiai – reikės Cloudflare Worker arba n8n webhook URL.
+        </p>
+      </div>
+
+      <div class="card qa">
+        <div class="qaTop">
+          <input id="q" class="input" placeholder='Pvz. „Kaip HeyGen pridėti subtitrus?“' />
+          <button id="ask" class="btn primary">KLAUSTI</button>
+        </div>
+
+        <div class="hints">
+          <button class="hint" data-hint="Kokia nuotrauka geriausia avatarui?">Nuotrauka</button>
+          <button class="hint" data-hint="Kokį tekstą rašyti 10–15 sekundžių audio?">Tekstas</button>
+          <button class="hint" data-hint="Kaip pasirinkti natūralesnį balsą ElevenLabs?">Balsas</button>
+          <button class="hint" data-hint="Kaip HeyGen pridėti subtitrus (captions)?">Subtitrai</button>
+        </div>
+
+        <div class="ans">
+          <div class="meta" id="meta">Atsakymas bus čia.</div>
+          <div class="text" id="text"></div>
+        </div>
+
+        <div class="note">
+          ✅ Jeigu dar neturi endpoint: kol kas veiks demo režimas su tema-only filtru.
+          Kai susikursi Cloudflare Worker / n8n – įrašysi URL vienoje vietoje (WORKER_URL) ir viskas.
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div>© Matrix PRO • AI Avatar Guide • HTML/CSS/JS</div>
+      <div style="display:flex; gap:12px; flex-wrap:wrap">
+        <a href="#instrukcija">Instrukcija</a>
+        <a href="#qa">AI Q&A</a>
+      </div>
+    </footer>
+  </main>
+
+  <dialog id="modal">
+    <div class="modalBox">
+      <div class="modalTop">
+        <div class="modalTitle" id="modalTitle">Peržiūra</div>
+        <button class="btn small" id="close">UŽDARYTI ✕</button>
+      </div>
+      <div class="modalContent" id="modalContent"></div>
+    </div>
+  </dialog>
+
+  <script>
+    // =========================
+    // 1) ENDPOINT (OpenAI + n8n) — įrašysi vėliau vienoje vietoje
+    // =========================
+    const WORKER_URL = "https://ai-avatar-qa.vaiva-skersyte.workers.dev"; // Pvz. https://fasttrack-ai-qa.YOURSUBDOMAIN.workers.dev  arba  https://YOUR-N8N/webhook/fasttrack-qa
+
+    // fallback tema-only filtras (kai endpoint dar neprijungtas)
+    const allowedKeywords = [
+      'avatar', 'heygen', 'elevenlabs', 'chatgpt', 'kalbantis', 'balsas', 'audio', 'video',
+      'subtitra', 'captions', 'nuotrauk', 'pixar', 'prompt', 'import', 'generate'
+    ];
+
+    // =========================
+    // 2) MATRIX BACKGROUND
+    // =========================
+    const canvas = document.getElementById('matrix');
+    const ctx = canvas.getContext('2d');
+
+    let matrixOn = true;
+    let reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const chars = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズヅブプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const glyphs = chars.split('');
+
+    let fontSize = 16;
+    let columns = 0;
+    let drops = [];
+
+    function setupColumns(){
+      fontSize = reduceMotion ? 18 : 16;
+      columns = Math.floor(window.innerWidth / fontSize);
+      drops = new Array(columns).fill(1);
+    }
+
+    function resize(){
+      canvas.width = window.innerWidth * devicePixelRatio;
+      canvas.height = window.innerHeight * devicePixelRatio;
+      canvas.style.width = window.innerWidth + 'px';
+      canvas.style.height = window.innerHeight + 'px';
+      ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+      setupColumns();
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    function drawMatrix(){
+      if(!matrixOn) return;
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
+      ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+
+      ctx.font = `800 ${fontSize}px JetBrains Mono, monospace`;
+
+      for(let i=0; i<drops.length; i++){
+        const text = glyphs[(Math.random() * glyphs.length) | 0];
+        const x = i * fontSize;
+        const y = drops[i] * fontSize;
+
+        ctx.fillStyle = 'rgba(210, 255, 230, 0.85)';
+        ctx.fillText(text, x, y);
+        ctx.fillStyle = 'rgba(0, 255, 136, 0.55)';
+        ctx.fillText(text, x, y + 1);
+
+        if(y > window.innerHeight && Math.random() > (reduceMotion ? 0.985 : 0.975)){
+          drops[i] = 0;
+        }
+        drops[i]++;
+      }
+    }
+    (function loop(){ drawMatrix(); requestAnimationFrame(loop); })();
+
+    // =========================
+    // 3) HERO VIDEO CONTROLS
+    // =========================
+    const heroVideo = document.getElementById('heroVideo');
+    const playHero = document.getElementById('playHero');
+    const muteHero = document.getElementById('muteHero');
+
+    function setMuteIcon(){ muteHero.textContent = heroVideo.muted ? '🔇' : '🔊'; }
+    setMuteIcon();
+
+    playHero.addEventListener('click', async () => {
+      try{
+        heroVideo.muted = false;
+        setMuteIcon();
+        await heroVideo.play();
+        playHero.textContent = heroVideo.paused ? '▶ PLAY' : '⏸ PAUSE';
+      }catch{
+        heroVideo.muted = true;
+        setMuteIcon();
+        await heroVideo.play();
+        playHero.textContent = '⏸ PAUSE';
+      }
+    });
+
+    muteHero.addEventListener('click', () => {
+      heroVideo.muted = !heroVideo.muted;
+      setMuteIcon();
+    });
+
+    // =========================
+    // 4) COUNTERS
+    // =========================
+    function animateCounts(){
+      document.querySelectorAll('[data-count]').forEach(el => {
+        const target = Number(el.dataset.count || '0');
+        let val = 0;
+        const step = Math.max(1, Math.floor(target / 40));
+        const tick = () => {
+          val = Math.min(target, val + step);
+          el.textContent = String(val);
+          if(val < target) requestAnimationFrame(tick);
+        };
+        tick();
+      });
+    }
+    animateCounts();
+
+    // =========================
+    // 5) TEKSTAS + PROMPT
+    // =========================
+    const scriptText =
+`Sveiki! Aš parodysiu, kaip per 10–15 minučių susikurti kalbantį AI avatarą. Pirmiausia, iš savo nuotraukos susikursime stilizuotą avatarą. Tada parašysime trumpą tekstą ir per ElevenLabs paversime jį į balsą. Galiausiai, HeyGen sujungs avatarą ir audio į kalbantį video su subtitrais. Tai paprastas būdas greitai kurti turinį TikTok, YouTube, marketingui ar mokymams net neturint techninių žinių.`;
+
+    const avatarPrompt =
+`Sukurk Pixar (ar panašaus animacinio) stiliaus avatarą iš mano įkeltos nuotraukos.
+Reikalavimai:
+- išlaikyk veido bruožus (kad būtų panašus į mane),
+- tvarkingas apšvietimas, aiškus veidas,
+- aukšta kokybė, ryškus fokusas,
+- neutralus arba lengvas futuristinis (Matrix vibe) fonas.
+Grąžink kaip paveikslėlį (png arba jpg).`;
+
+    document.getElementById('script').textContent = scriptText;
+
+    // =========================
+    // 6) AUDIO PLAYER
+    // =========================
+    const audio = document.getElementById('audio');
+    const audioToggle = document.getElementById('audioToggle');
+    const fill = document.getElementById('fill');
+    const time = document.getElementById('time');
+
+    function fmt(s){
+      const m = Math.floor(s/60);
+      const ss = Math.floor(s%60).toString().padStart(2,'0');
+      return `${m}:${ss}`;
+    }
+
+    audioToggle.addEventListener('click', async () => {
+      if(audio.paused){
+        await audio.play();
+        audioToggle.textContent = '⏸';
+      } else {
+        audio.pause();
+        audioToggle.textContent = '▶';
+      }
+    });
+
+    audio.addEventListener('timeupdate', () => {
+      if(!audio.duration) return;
+      fill.style.width = `${(audio.currentTime / audio.duration) * 100}%`;
+      time.textContent = fmt(audio.currentTime);
+    });
+
+    audio.addEventListener('ended', () => { audioToggle.textContent = '▶'; });
+
+    // =========================
+    // 7) SYNC PLAY
+    // =========================
+    const video = document.getElementById('video');
+    document.getElementById('sync').addEventListener('click', async () => {
+      try{
+        audio.currentTime = 0;
+        video.currentTime = 0;
+        await video.play();
+        await audio.play();
+      }catch(e){ console.log(e); }
+    });
+
+    // =========================
+    // 8) MODAL PREVIEW + COPY
+    // =========================
+    const modal = document.getElementById('modal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalContent = document.getElementById('modalContent');
+    document.getElementById('close').addEventListener('click', () => modal.close());
+
+    document.addEventListener('click', (e) => {
+      const open = e.target.closest('[data-open]');
+      if(!open) return;
+
+      modalContent.innerHTML = '';
+      const what = open.dataset.open;
+
+      if(what === 'photo'){
+        modalTitle.textContent = 'Avataro nuotrauka';
+        const img = document.createElement('img');
+        img.src = 'avatar.png';
+        img.alt = 'Avataro nuotrauka';
+        modalContent.appendChild(img);
+      }
+
+      if(what === 'audio'){
+        modalTitle.textContent = 'Audio (ElevenLabs)';
+        const box = document.createElement('div');
+        box.innerHTML = `
+          <p style="margin:0 0 12px;color:rgba(226,255,236,.75);font-weight:700;line-height:1.7;font-family:var(--mono)">
+            Žemiau – audio įrašas ir tekstas.
+          </p>
+          <audio controls style="width:100%" src="audio.mp3"></audio>
+          <div style="margin-top:12px;padding:12px;border-radius:18px;border:1px solid rgba(0,255,136,.14);background:rgba(0,0,0,.35);color:rgba(226,255,236,.78);line-height:1.7;font-weight:650;">
+            ${scriptText}
+          </div>
+        `;
+        modalContent.appendChild(box);
+      }
+
+      if(what === 'video'){
+        modalTitle.textContent = 'Video (HeyGen)';
+        const v = document.createElement('video');
+        v.src = 'Avatar_Video.mp4';
+        v.controls = true;
+        v.playsInline = true;
+        modalContent.appendChild(v);
+      }
+
+      modal.showModal();
+    });
+
+    async function copyText(text, btn){
+      try{
+        await navigator.clipboard.writeText(text);
+        const prev = btn.textContent;
+        btn.textContent = '✅ COPIED';
+        setTimeout(()=> btn.textContent = prev, 900);
+      }catch{
+        alert('Nepavyko nukopijuoti (naršyklės leidimai).');
+      }
+    }
+
+    document.addEventListener('click', (e) => {
+      const c = e.target.closest('[data-copy]');
+      if(!c) return;
+      const which = c.dataset.copy;
+      if(which === 'avatarPrompt') copyText(avatarPrompt, c);
+      if(which === 'script') copyText(scriptText, c);
+    });
+
+    // =========================
+    // 9) BUILD LOG
+    // =========================
+    const logBody = document.getElementById('logBody');
+    const lines = [
+      '→ Initializing Matrix PRO UI…',
+      '→ Rendering Matrix rain + scanlines…',
+      '→ Loading files: avatar.png / audio.mp3 / Avatar_Video.mp4',
+      '→ Building beginner-friendly sections + steps…',
+      '→ Wiring audio progress + modal previews…',
+      '→ Sync play: audio + video…',
+      '→ AI Q&A: topic-only + serverless endpoint (optional)…',
+      '✓ Ready for GitHub Pages.'
+    ];
+    function typeLog(){
+      logBody.textContent = '';
+      let i = 0;
+      const tick = () => {
+        if(i >= lines.length) return;
+        logBody.textContent += (logBody.textContent ? '\n' : '') + lines[i++];
+        if(reduceMotion) tick(); else setTimeout(tick, 340);
+      };
+      tick();
+    }
+    typeLog();
+
+    // =========================
+    // 10) NAV
+    // =========================
+    document.getElementById('goSteps').addEventListener('click', () => {
+      document.getElementById('instrukcija').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
+    });
+
+    document.getElementById('toggleMotion').addEventListener('click', () => {
+      reduceMotion = !reduceMotion;
+      document.getElementById('toggleMotion').textContent = reduceMotion ? 'ĮJUNGTI animacijas' : 'Sumažinti animacijas';
+      setupColumns();
+      typeLog();
+    });
+
+    document.getElementById('toggleMatrix').addEventListener('click', () => {
+      matrixOn = !matrixOn;
+      document.getElementById('toggleMatrix').textContent = matrixOn ? 'Išjungti Matrix foną' : 'Įjungti Matrix foną';
+      if(!matrixOn){
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+      }
+    });
+
+    document.getElementById('testTopic').addEventListener('click', () => {
+      const q = document.getElementById('q');
+      q.value = 'Kaip HeyGen pridėti subtitrus ir importuoti audio?';
+      q.focus();
+      document.getElementById('qa').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
+    });
+
+    // =========================
+    // 11) AI Q&A
+    // =========================
+    const qEl = document.getElementById('q');
+    const askBtn = document.getElementById('ask');
+    const meta = document.getElementById('meta');
+    const text = document.getElementById('text');
+
+    document.querySelectorAll('.hint').forEach(b => {
+      b.addEventListener('click', () => {
+        qEl.value = b.dataset.hint;
+        qEl.focus();
+      });
+    });
+
+    function localTopicFilter(question){
+      const lower = question.toLowerCase();
+      return allowedKeywords.some(k => lower.includes(k));
+    }
+
+    async function askQuestion(){
+      const question = (qEl.value || '').trim();
+      if(!question) return;
+
+      meta.textContent = 'Mąstau…';
+      text.textContent = '';
+
+      // no endpoint yet -> demo
+      if(!WORKER_URL){
+        if(!localTopicFilter(question)){
+          meta.textContent = 'Užklausa atmesta (ne apie temą)';
+          text.textContent = 'Galiu atsakyti tik apie kalbančio AI avataro kūrimą (ChatGPT / ElevenLabs / HeyGen, audio, video, subtitrai).';
+          return;
+        }
+        meta.textContent = 'Demo atsakymas (tik tema)';
+        text.textContent =
+          'Trumpai: pasirink aiškią nuotrauką, sukurk avatarą per ChatGPT, parašyk 10–15 s tekstą ir sugeneruok balsą ElevenLabs, tada HeyGen importuok avatarą (avatars → New look → Upload Look), įkelk audio, įjunk captions ir generuok video. Jei nori – paklausk konkrečiai, kuriame žingsnyje užstrigai.';
+        return;
+      }
+
+      // real endpoint
+      try{
+        const res = await fetch(WORKER_URL, {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json' },
+          body: JSON.stringify({ question })
+        });
+
+        if(!res.ok){
+          const t = await res.text();
+          throw new Error(t || 'Request failed');
+        }
+
+        const data = await res.json();
+        meta.textContent = data.allowed ? 'Atsakymas (tik tema)' : 'Užklausa atmesta (ne apie temą)';
+        text.textContent = data.answer || data.message || '';
+      }catch(e){
+        meta.textContent = 'Nepavyko gauti atsakymo.';
+        text.textContent = 'Patikrink WORKER_URL (ar n8n webhook), CORS ir ar endpoint grąžina JSON.';
+        console.log(e);
+      }
+    }
+
+    askBtn.addEventListener('click', askQuestion);
+    qEl.addEventListener('keydown', (e) => { if(e.key === 'Enter') askQuestion(); });
+  </script>
+</body>
+</html>
